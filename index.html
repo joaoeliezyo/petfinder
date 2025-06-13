@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PetFinder - Encontre seu pet perdido</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#2382FE',
+              secondary: '#5B5B5B',
+              'primary-dark': '#1E6FE6',
+              'primary-light': '#4A94FE'
+            },
+            fontFamily: {
+              inter: ['Inter', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+
+  <body class="bg-gray-50 text-secondary">
+    <div
+      id="loading-overlay"
+      class="hidden fixed inset-0 bg-white bg-opacity-80 z-[100] flex items-center justify-center"
+    >
+      <div
+        class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"
+      ></div>
+    </div>
+
+    <header
+      id="header"
+      class="bg-white/90 backdrop-blur-sm shadow-md fixed top-0 left-0 right-0 z-50"
+    >
+      <div class="container mx-auto px-4">
+        <nav class="flex justify-between items-center py-4">
+          <a href="#hero" class="text-2xl font-bold text-gray-800">
+            🐾 <span class="hidden sm:inline">PetFinder</span>
+          </a>
+
+          <ul class="hidden md:flex items-center space-x-6">
+            <li>
+              <a
+                href="#home"
+                class="nav-link hover:text-primary transition-colors"
+                >Mapa</a
+              >
+            </li>
+            <li>
+              <a
+                href="#achados"
+                class="nav-link hover:text-primary transition-colors"
+                >Reencontros</a
+              >
+            </li>
+            <li>
+              <a
+                href="#sobre"
+                class="nav-link hover:text-primary transition-colors"
+                >Sobre</a
+              >
+            </li>
+          </ul>
+
+          <div id="auth-buttons" class="flex items-center space-x-2">
+            <button
+              id="login-button"
+              class="hidden sm:block px-4 py-2 rounded-md font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Login
+            </button>
+            <button
+              id="register-button"
+              class="bg-primary text-white px-4 py-2 rounded-md font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Cadastrar
+            </button>
+          </div>
+
+          <div id="user-info" class="hidden relative items-center space-x-4">
+            <button id="notification-button" class="relative">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-gray-600 hover:text-primary"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
+              </svg>
+              <span
+                id="notification-badge"
+                class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+              ></span>
+            </button>
+
+            <button id="user-menu-button" class="flex items-center space-x-2">
+              <span id="user-name" class="font-semibold"></span>
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                ></path>
+              </svg>
+            </button>
+            <div
+              id="user-menu"
+              class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 top-full"
+            >
+              <a
+                href="#meus-pets"
+                class="nav-link block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >Meus Pets</a
+              >
+              <a
+                href="#"
+                id="logout-button"
+                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >Sair</a
+              >
+            </div>
+          </div>
+
+          <button
+            id="mobile-menu-button"
+            class="md:hidden p-2 rounded-md hover:bg-gray-100"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16m-7 6h7"
+              />
+            </svg>
+          </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden pb-4"></div>
+      </div>
+    </header>
+
+    <section id="meus-pets" class="hidden pt-24 min-h-screen bg-gray-100">
+      <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-3xl font-bold text-gray-800">
+            Meus Pets Cadastrados
+          </h2>
+          <a href="#home" class="nav-link text-primary hover:underline"
+            >Voltar ao Mapa</a
+          >
+        </div>
+        <div
+          id="meus-pets-list"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <p
+            id="no-pets-message"
+            class="col-span-full text-center text-gray-500"
+          >
+            Você ainda não cadastrou nenhum pet.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div
+      id="login-modal"
+      class="hidden fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm m-4">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800">Login</h2>
+          <button
+            id="close-login-modal"
+            class="text-gray-500 hover:text-gray-800 text-3xl"
+            aria-label="Fechar modal de login"
+          >
+            &times;
+          </button>
+        </div>
+        <form id="login-form">
+          <div class="space-y-4">
+            <div>
+              <label
+                for="login-email"
+                class="block text-sm font-medium text-gray-700"
+                >Email</label
+              >
+              <input
+                type="email"
+                id="login-email"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label
+                for="login-password"
+                class="block text-sm font-medium text-gray-700"
+                >Senha</label
+              >
+              <input
+                type="password"
+                id="login-password"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+          </div>
+          <div class="mt-6">
+            <button
+              type="submit"
+              class="w-full bg-primary text-white px-4 py-2 rounded-md font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Entrar
+            </button>
+          </div>
+          <p
+            id="login-error"
+            class="text-red-500 text-sm mt-2 text-center h-4"
+          ></p>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="register-modal"
+      class="hidden fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md m-4">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800">Criar Conta</h2>
+          <button
+            id="close-register-modal"
+            class="text-gray-500 hover:text-gray-800 text-3xl"
+            aria-label="Fechar modal de cadastro"
+          >
+            &times;
+          </button>
+        </div>
+        <form id="register-form">
+          <div class="space-y-4">
+            <div>
+              <label
+                for="register-name"
+                class="block text-sm font-medium text-gray-700"
+                >Nome Completo</label
+              >
+              <input
+                type="text"
+                id="register-name"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label
+                for="register-email"
+                class="block text-sm font-medium text-gray-700"
+                >Email</label
+              >
+              <input
+                type="email"
+                id="register-email"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              <p
+                id="register-email-error"
+                class="text-red-500 text-sm mt-1 h-4"
+              ></p>
+            </div>
+            <div>
+              <label
+                for="register-password"
+                class="block text-sm font-medium text-gray-700"
+                >Senha (mín. 6 caracteres)</label
+              >
+              <input
+                type="password"
+                id="register-password"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+          </div>
+          <div class="mt-6">
+            <button
+              type="submit"
+              class="w-full bg-primary text-white px-4 py-2 rounded-md font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Cadastrar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <main id="main-content" class="pt-16">
+      <section
+        id="hero"
+        class="bg-white text-center py-20 px-4 flex flex-col items-center justify-center"
+      >
+        <h1 class="text-5xl font-bold text-gray-800 mb-4">
+          Encontre seu pet perdido
+        </h1>
+        <p class="text-lg text-secondary max-w-2xl mb-8">
+          Juntos na busca pelo seu melhor amigo. Conectamos tutores desesperados
+          a uma rede de voluntários para trazer seu pet de volta para casa.
+        </p>
+        <a
+          href="#home"
+          class="nav-link bg-primary text-white px-8 py-3 rounded-md font-semibold hover:bg-primary-dark transition-transform transform hover:scale-105"
+          >Encontrar meu Pet</a
+        >
+      </section>
+
+      <section id="como-funciona" class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4 text-center">
+          <h2 class="text-3xl font-bold text-gray-800 mb-2">Como Funciona?</h2>
+          <p class="text-secondary max-w-2xl mx-auto mb-12">
+            Nosso processo é simples, rápido e focado em resultados.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+              <div
+                class="flex items-center justify-center w-12 h-12 bg-primary-light rounded-full text-primary font-bold text-xl mb-4"
+              >
+                1
+              </div>
+              <h3 class="text-xl font-bold text-gray-800 mb-2">
+                Cadastre seu Pet
+              </h3>
+              <p class="text-secondary">
+                Adicione fotos, características e a última localização vista.
+                Quanto mais detalhes, maiores as chances de reencontro.
+              </p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+              <div
+                class="flex items-center justify-center w-12 h-12 bg-primary-light rounded-full text-primary font-bold text-xl mb-4"
+              >
+                2
+              </div>
+              <h3 class="text-xl font-bold text-gray-800 mb-2">
+                Alerta Imediato
+              </h3>
+              <p class="text-secondary">
+                Notificamos voluntários e outros tutores na região para ficarem
+                atentos. A comunidade é nossa maior força.
+              </p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+              <div
+                class="flex items-center justify-center w-12 h-12 bg-primary-light rounded-full text-primary font-bold text-xl mb-4"
+              >
+                3
+              </div>
+              <h3 class="text-xl font-bold text-gray-800 mb-2">
+                Acompanhe no Mapa
+              </h3>
+              <p class="text-secondary">
+                Visualize em tempo real os locais onde seu pet pode ter sido
+                visto e comunique-se com quem tiver informações.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="stats" class="py-16 bg-primary text-white">
+        <div class="container mx-auto px-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div>
+              <h3 class="text-4xl font-bold" data-target="125">0</h3>
+              <p class="text-primary-light mt-2">Reencontros Felizes</p>
+            </div>
+            <div>
+              <h3 class="text-4xl font-bold" data-target="450">0</h3>
+              <p class="text-primary-light mt-2">Voluntários Ativos</p>
+            </div>
+            <div>
+              <h3 class="text-4xl font-bold" data-target="800">0</h3>
+              <p class="text-primary-light mt-2">Pets Cadastrados</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="home"
+        class="flex flex-col md:flex-row"
+        style="padding-top: 64px; height: calc(100vh - 64px)"
+      >
+        <div
+          id="side-panel"
+          class="w-full md:w-1/3 lg:w-1/4 bg-white shadow-lg p-4 overflow-y-auto"
+        >
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Encontre um Pet</h2>
+
+          <div class="mb-4">
+            <label for="search-input" class="text-sm font-medium text-gray-700"
+              >Buscar por nome ou descrição</label
+            >
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Ex: Rex, caramelo..."
+              class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary transition"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="type-filter" class="text-sm font-medium">Tipo:</label>
+              <select
+                id="type-filter"
+                class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary transition"
+              >
+                <option value="all">Todos</option>
+                <option value="dog">Cão</option>
+                <option value="cat">Gato</option>
+              </select>
+            </div>
+            <div>
+              <label for="date-filter" class="text-sm font-medium">Data:</label>
+              <select
+                id="date-filter"
+                class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary transition"
+              >
+                <option value="all">Qualquer data</option>
+                <option value="7">Últimos 7 dias</option>
+                <option value="30">Últimos 30 dias</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 mb-4">
+            <button
+              id="geolocate-button"
+              class="flex-1 bg-gray-200 text-gray-800 px-3 py-2 text-sm rounded-md font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              Perto de mim
+            </button>
+            <button
+              id="open-modal-button"
+              class="flex-1 bg-primary text-white px-3 py-2 text-sm rounded-md font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Cadastrar Pet
+            </button>
+          </div>
+
+          <div id="pet-list-container" class="space-y-3"></div>
+        </div>
+
+        <div id="map" class="w-full md:w-2/3 lg:w-3/4 h-full"></div>
+      </section>
+
+      <section id="achados" class="min-h-screen bg-gray-50 py-16">
+        <div class="container mx-auto px-4">
+          <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold text-gray-800">
+              Histórias de Reencontro
+            </h2>
+            <p class="text-secondary mt-2 max-w-2xl mx-auto">
+              Celebre conosco alguns dos finais felizes que a nossa comunidade
+              ajudou a construir. Cada reencontro é uma vitória!
+            </p>
+          </div>
+
+          <div
+            id="found-pets-grid"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          ></div>
+          <p
+            id="no-found-pets-message"
+            class="hidden col-span-full text-center text-gray-500 mt-8"
+          >
+            Nenhuma história de reencontro disponível no momento.
+          </p>
+        </div>
+      </section>
+
+      <section id="sobre" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+          <div class="text-center">
+            <h2 class="text-4xl font-bold text-gray-800">Sobre o PetFinder</h2>
+            <p class="text-secondary mt-2 max-w-3xl mx-auto">
+              Nossa missão é usar a tecnologia e o poder da comunidade para
+              reunir pets perdidos com suas famílias o mais rápido possível.
+            </p>
+          </div>
+
+          <div class="mt-12 grid md:grid-cols-2 gap-12 items-center">
+            <div class="text-secondary space-y-4">
+              <h3 class="text-2xl font-bold text-gray-800">Nossa História</h3>
+              <p>
+                O PetFinder nasceu da experiência de um de nossos fundadores,
+                que passou semanas angustiantes procurando por seu cachorro, o
+                Max. Ele percebeu que faltava uma ferramenta centralizada e ágil
+                para mobilizar a vizinhança. Assim, reunimos uma equipe de
+                amantes de animais e desenvolvedores para criar uma plataforma
+                que tornasse cada reencontro uma realidade mais próxima.
+              </p>
+              <p>
+                Acreditamos que cada animal de estimação é um membro da família
+                e merece estar seguro em seu lar.
+              </p>
+            </div>
+            <div>
+              <img
+                src="https://images.unsplash.com/photo-1548802673-380ab8ebc7b7?q=80&w=1974&auto=format&fit=crop"
+                alt="Gato olhando para a câmera"
+                class="rounded-lg shadow-lg"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          <div class="mt-16 text-center">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">
+              Dúvidas ou Sugestões?
+            </h3>
+            <p class="text-secondary mb-6">
+              Nosso time está sempre pronto para ajudar.
+            </p>
+            <a
+              href="mailto:contato@petfinder.com"
+              class="bg-gray-800 text-white px-6 py-3 rounded-md font-semibold hover:bg-gray-700 transition-colors"
+            >
+              Fale Conosco
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white">
+      <div
+        class="container mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left"
+      >
+        <div>
+          <h3 class="text-xl font-bold mb-2">🐾 PetFinder</h3>
+          <p class="text-gray-400">
+            Conectando corações, um reencontro de cada vez.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-bold mb-2">Links Rápidos</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="#home" class="nav-link text-gray-400 hover:text-white"
+                >Mapa</a
+              >
+            </li>
+            <li>
+              <a href="#achados" class="nav-link text-gray-400 hover:text-white"
+                >Histórias de Sucesso</a
+              >
+            </li>
+            <li>
+              <a href="#sobre" class="nav-link text-gray-400 hover:text-white"
+                >Sobre Nós</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-bold mb-2">Legal</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="#" class="text-gray-400 hover:text-white"
+                >Política de Privacidade</a
+              >
+            </li>
+            <li>
+              <a href="#" class="text-gray-400 hover:text-white"
+                >Termos de Uso</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="bg-gray-900 py-4 text-center">
+        <p class="text-gray-500">
+          &copy; 2025 PetFinder. Todos os direitos reservados.
+        </p>
+      </div>
+    </footer>
+
+    <div
+      id="pet-modal"
+      class="hidden fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-300"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg m-4 max-h-screen overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800">
+            Cadastrar Pet Perdido
+          </h2>
+          <button
+            id="close-modal-button"
+            class="text-gray-500 hover:text-gray-800 text-3xl"
+            aria-label="Fechar modal de cadastro de pet"
+          >
+            &times;
+          </button>
+        </div>
+
+        <form id="pet-form" novalidate>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                for="pet-name"
+                class="block text-sm font-medium text-gray-700"
+                >Nome do Pet</label
+              >
+              <input
+                type="text"
+                id="pet-name"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label
+                for="pet-type"
+                class="block text-sm font-medium text-gray-700"
+                >Tipo</label
+              >
+              <select
+                id="pet-type"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              >
+                <option value="">Selecione...</option>
+                <option value="dog">Cão</option>
+                <option value="cat">Gato</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700"
+                >Foto</label
+              >
+              <div class="mt-1 flex items-center gap-4">
+                <img
+                  id="photo-preview"
+                  class="h-20 w-20 rounded-md object-cover bg-gray-100"
+                  src="https://via.placeholder.com/150"
+                  alt="Pré-visualização da foto do pet"
+                />
+                <input
+                  type="file"
+                  id="pet-photo"
+                  accept="image/*"
+                  class="hidden"
+                />
+                <button
+                  type="button"
+                  id="upload-photo-button"
+                  class="px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50"
+                >
+                  Escolher Imagem
+                </button>
+              </div>
+            </div>
+            <div>
+              <label
+                for="pet-lost-date"
+                class="block text-sm font-medium text-gray-700"
+                >Data que se perdeu</label
+              >
+              <input
+                type="date"
+                id="pet-lost-date"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label
+                for="pet-urgency"
+                class="block text-sm font-medium text-gray-700"
+                >Nível de Urgência</label
+              >
+              <select
+                id="pet-urgency"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              >
+                <option value="normal">Normal</option>
+                <option value="urgent">
+                  Urgente (ex: precisa de medicação)
+                </option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label
+                for="pet-description"
+                class="block text-sm font-medium text-gray-700"
+                >Descrição e último local visto</label
+              >
+              <textarea
+                id="pet-description"
+                rows="3"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              ></textarea>
+            </div>
+            <p class="md:col-span-2 text-sm text-gray-600">
+              Clique no mapa para preencher as coordenadas ou insira
+              manualmente.
+            </p>
+            <div>
+              <label
+                for="pet-lat"
+                class="block text-sm font-medium text-gray-700"
+                >Latitude</label
+              >
+              <input
+                type="number"
+                step="any"
+                id="pet-lat"
+                required
+                placeholder="-5.08917"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label
+                for="pet-lng"
+                class="block text-sm font-medium text-gray-700"
+                >Longitude</label
+              >
+              <input
+                type="number"
+                step="any"
+                id="pet-lng"
+                required
+                placeholder="-42.80194"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+          </div>
+          <p
+            id="pet-form-error"
+            class="text-red-500 text-sm mt-4 text-center h-4"
+          ></p>
+          <div class="mt-6 flex justify-end space-x-3">
+            <button
+              type="button"
+              id="cancel-button"
+              class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md font-semibold hover:bg-gray-300 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-primary text-white px-4 py-2 rounded-md font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Salvar Cadastro
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="chat-modal"
+      class="hidden fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-300"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl w-full max-w-md m-4 flex flex-col"
+        style="height: 70vh"
+      >
+        <div class="flex items-center justify-between p-4 border-b">
+          <div class="flex items-center gap-3">
+            <img
+              id="chat-pet-photo"
+              src=""
+              alt="Foto do Pet"
+              class="w-12 h-12 rounded-full object-cover"
+            />
+            <div>
+              <h3 class="font-bold text-gray-800" id="chat-pet-name"></h3>
+              <p class="text-sm text-green-500">Online</p>
+            </div>
+          </div>
+          <button
+            id="close-chat-modal"
+            class="text-gray-500 hover:text-gray-800 text-3xl"
+            aria-label="Fechar modal de chat"
+          >
+            &times;
+          </button>
+        </div>
+        <div
+          id="chat-messages"
+          class="flex-1 p-4 overflow-y-auto space-y-4"
+        ></div>
+        <form id="chat-form" class="p-4 border-t">
+          <div class="flex items-center">
+            <input
+              type="text"
+              id="chat-input"
+              placeholder="Digite sua mensagem..."
+              autocomplete="off"
+              class="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+            />
+            <button
+              type="submit"
+              class="ml-3 bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition-colors"
+              aria-label="Enviar mensagem"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="notification-toast"
+      class="hidden fixed bottom-5 right-5 bg-white shadow-lg rounded-lg p-4 w-full max-w-sm z-50 border-l-4 border-primary"
+    >
+      <div class="flex items-start gap-4">
+        <div class="flex-shrink-0 text-primary pt-1">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+        </div>
+        <div>
+          <h4 id="toast-title" class="font-bold text-gray-800">
+            Nova Notificação
+          </h4>
+          <p id="toast-message" class="text-sm text-secondary">
+            Mensagem aqui.
+          </p>
+        </div>
+        <button
+          id="close-toast"
+          class="text-gray-400 hover:text-gray-600"
+          aria-label="Fechar notificação"
+        >
+          &times;
+        </button>
+      </div>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // --- 1. CONFIGURAÇÃO INICIAL E DADOS MOCKADOS ---
+
+        // Adicionamos 'lostDate' e 'urgency' aos dados
+        const mockPets = [
+          {
+            id: 1,
+            name: 'Rex',
+            type: 'dog',
+            status: 'looking',
+            coords: [-5.0831, -42.8099],
+            description: 'Visto pela última vez perto do Parque da Cidadania.',
+            photo:
+              'https://images.unsplash.com/photo-1587402092301-721634162784?q=80&w=2070&auto=format&fit=crop',
+            lostDate: '2025-06-05',
+            urgency: 'urgent'
+          },
+          {
+            id: 2,
+            name: 'Mimi',
+            type: 'cat',
+            status: 'looking',
+            coords: [-5.0595, -42.79],
+            description: 'Gata siamesa, muito dócil. Perdida no bairro Jockey.',
+            photo:
+              'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?q=80&w=1160&auto=format&fit=crop',
+            lostDate: '2025-06-10',
+            urgency: 'normal'
+          },
+          {
+            id: 3,
+            name: 'Luna',
+            type: 'cat',
+            status: 'looking',
+            coords: [-5.0991, -42.8255],
+            description:
+              'Gata preta com mancha branca no peito, se perdeu no Pirajá.',
+            photo:
+              'https://images.unsplash.com/photo-1574158622682-e40e6984100d?q=80&w=2080&auto=format&fit=crop',
+            lostDate: '2025-05-15',
+            urgency: 'normal'
+          },
+          {
+            id: 4,
+            name: 'Toby',
+            type: 'dog',
+            status: 'looking',
+            coords: [-5.0881, -42.7811],
+            description:
+              'Vira-lata caramelo, muito agitado. Bairro dos Noivos.',
+            photo:
+              'https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=1974&auto=format&fit=crop',
+            lostDate: '2025-06-01',
+            urgency: 'normal'
+          },
+          {
+            id: 5,
+            name: 'Bolinha',
+            type: 'dog',
+            status: 'looking',
+            coords: [-5.1105, -42.7983],
+            description: 'Poodle branco, pequeno. Sumiu na região do Saci.',
+            photo:
+              'https://images.unsplash.com/photo-1588645585798-2a3c563a6976?q=80&w=1974&auto=format&fit=crop',
+            lostDate: '2025-04-20',
+            urgency: 'urgent'
+          }
+        ]
+
+        if (!localStorage.getItem('pets')) {
+          localStorage.setItem('pets', JSON.stringify(mockPets))
+        }
+        let petsData = JSON.parse(localStorage.getItem('pets'))
+
+        // Elementos da UI
+        const searchInput = document.getElementById('search-input')
+        const typeFilter = document.getElementById('type-filter')
+        const dateFilter = document.getElementById('date-filter')
+        const geolocateButton = document.getElementById('geolocate-button')
+        const petListContainer = document.getElementById('pet-list-container')
+
+        // --- 2. INICIALIZAÇÃO DO MAPA E CAMADAS ---
+        const map = L.map('map').setView([-5.08917, -42.80194], 13)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map)
+
+        // Camada de cluster para os marcadores
+        let markersLayer = L.markerClusterGroup().addTo(map)
+        let allMarkers = {} // Para guardar referência de cada marcador
+
+        // --- 3. ÍCONES PERSONALIZADOS ---
+        const createIcon = (emoji, isUrgent) =>
+          L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div class="${
+              isUrgent ? 'urgent-icon' : ''
+            }" style="font-size: 24px;">${emoji}</div>`,
+            iconSize: [30, 42],
+            iconAnchor: [15, 42]
+          })
+
+        const dogIcon = createIcon('🐕', false)
+        const catIcon = createIcon('🐱', false)
+        const urgentDogIcon = createIcon('🐕', true)
+        const urgentCatIcon = createIcon('🐱', true)
+
+        // --- 4. FUNÇÕES PRINCIPAIS (RENDERIZAÇÃO) ---
+
+        const updateUI = () => {
+          markersLayer.clearLayers()
+          allMarkers = {}
+
+          const searchTerm = searchInput.value.toLowerCase()
+          const selectedType = typeFilter.value
+          const selectedDate = dateFilter.value
+
+          // Filtragem dos dados
+          const filteredPets = petsData.filter(pet => {
+            const typeMatch =
+              selectedType === 'all' || pet.type === selectedType
+            const searchMatch =
+              pet.name.toLowerCase().includes(searchTerm) ||
+              pet.description.toLowerCase().includes(searchTerm)
+
+            let dateMatch = true
+            if (selectedDate !== 'all') {
+              const lostDate = new Date(pet.lostDate)
+              const diffTime = Math.abs(new Date() - lostDate)
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+              dateMatch = diffDays <= parseInt(selectedDate)
+            }
+            return (
+              typeMatch && searchMatch && dateMatch && pet.status === 'looking'
+            )
+          })
+
+          renderMarkers(filteredPets)
+          renderPetList(filteredPets)
+        }
+
+        const renderMarkers = filteredPets => {
+          filteredPets.forEach(pet => {
+            let icon
+            if (pet.type === 'dog') {
+              icon = pet.urgency === 'urgent' ? urgentDogIcon : dogIcon
+            } else {
+              icon = pet.urgency === 'urgent' ? urgentCatIcon : catIcon
+            }
+
+            const marker = L.marker(pet.coords, { icon: icon })
+
+            // Popup Melhorado
+            const lostDate = new Date(pet.lostDate)
+            const diffDays = Math.ceil(
+              Math.abs(new Date() - lostDate) / (1000 * 60 * 60 * 24)
+            )
+
+            const popupContent = `
+    <div class="w-56">
+        <img src="${pet.photo}" alt="${pet.name}" class="w-full h-32 object-cover" />
+        <div class="p-3">
+            <h3 class="font-bold text-lg text-gray-800">${pet.name}</h3>
+            <p class="text-sm text-secondary">${pet.description}</p>
+            <p class="text-sm text-red-600 font-semibold mt-1">Perdido há ${diffDays} dia(s)</p>
+        </div>
+        <button class="info-button" onclick="openChat(${pet.id})">Tenho Informações</button>
+    </div>
+`
+            marker.bindPopup(popupContent, { className: 'custom-popup' })
+
+            markersLayer.addLayer(marker)
+            allMarkers[pet.id] = marker // Armazena a referência
+          })
+        }
+
+        const renderPetList = filteredPets => {
+          petListContainer.innerHTML = '' // Limpa a lista
+          if (filteredPets.length === 0) {
+            petListContainer.innerHTML =
+              '<p class="text-center text-gray-500 mt-4">Nenhum pet encontrado com os filtros selecionados.</p>'
+            return
+          }
+
+          filteredPets.forEach(pet => {
+            const card = document.createElement('div')
+            card.className =
+              'p-3 bg-gray-50 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 hover:shadow-md transition-all flex items-center gap-3'
+            card.innerHTML = `
+                <img src="${pet.photo}" alt="${
+              pet.name
+            }" class="w-16 h-16 rounded-md object-cover">
+                <div>
+                    <h4 class="font-bold text-md text-gray-800">${pet.name}</h4>
+                    <p class="text-xs text-secondary">${pet.description.substring(
+                      0,
+                      40
+                    )}...</p>
+                </div>
+            `
+            card.addEventListener('click', () => {
+              const marker = allMarkers[pet.id]
+              if (marker) {
+                map.setView(marker.getLatLng(), 17) // Centraliza com zoom
+                marker.openPopup()
+              }
+            })
+            petListContainer.appendChild(card)
+          })
+        }
+
+        // --- 5. EVENT LISTENERS ---
+
+        // Filtros
+        searchInput.addEventListener('keyup', updateUI)
+        typeFilter.addEventListener('change', updateUI)
+        dateFilter.addEventListener('change', updateUI)
+
+        // Geolocalização
+        geolocateButton.addEventListener('click', () => {
+          navigator.geolocation.getCurrentPosition(
+            position => {
+              const { latitude, longitude } = position.coords
+              map.setView([latitude, longitude], 15)
+              L.marker([latitude, longitude], {
+                icon: L.divIcon({ html: '📍', className: 'text-2xl' })
+              })
+                .addTo(map)
+                .bindPopup('Sua localização aproximada')
+                .openPopup()
+            },
+            () => {
+              alert('Não foi possível obter sua localização.')
+            }
+          )
+        })
+
+        // Lógica do Modal (existente, mas integrada aqui)
+        const petModal = document.getElementById('pet-modal')
+        const openModalButton = document.getElementById('open-modal-button')
+        const closeModalButton = document.getElementById('close-modal-button')
+        const cancelButton = document.getElementById('cancel-button')
+        const petForm = document.getElementById('pet-form')
+        const photoInput = document.getElementById('pet-photo')
+        const photoPreview = document.getElementById('photo-preview')
+
+        const openModal = () => petModal.classList.remove('hidden')
+        const closeModal = () => {
+          petModal.classList.add('hidden')
+          petForm.reset()
+          photoPreview.src = 'https://via.placeholder.com/80'
+        }
+
+        openModalButton.addEventListener('click', () => {
+          const currentUser = JSON.parse(localStorage.getItem('currentUser'))
+          if (!currentUser) {
+            alert('Você precisa estar logado para cadastrar um pet!')
+            document.getElementById('login-modal').classList.remove('hidden')
+            return
+          }
+          openModal()
+        })
+        closeModalButton.addEventListener('click', closeModal)
+        cancelButton.addEventListener('click', closeModal)
+
+        // Clique no mapa para preencher coordenadas no formulário
+        map.on('click', e => {
+          if (!petModal.classList.contains('hidden')) {
+            document.getElementById('pet-lat').value = e.latlng.lat.toFixed(5)
+            document.getElementById('pet-lng').value = e.latlng.lng.toFixed(5)
+          }
+        })
+
+        // Submissão do formulário de pet (ATUALIZADO)
+        petForm.addEventListener('submit', e => {
+          e.preventDefault()
+          const currentUser = JSON.parse(localStorage.getItem('currentUser'))
+
+          const newPet = {
+            id: Date.now(),
+            ownerId: currentUser.id,
+            name: document.getElementById('pet-name').value,
+            type: document.getElementById('pet-type').value,
+            status: 'looking',
+            coords: [
+              parseFloat(document.getElementById('pet-lat').value),
+              parseFloat(document.getElementById('pet-lng').value)
+            ],
+            description: document.getElementById('pet-description').value,
+            photo: photoPreview.src,
+            lostDate: document.getElementById('pet-lost-date').value, // Novo campo
+            urgency: document.getElementById('pet-urgency').value // Novo campo
+          }
+
+          petsData.push(newPet)
+          localStorage.setItem('pets', JSON.stringify(petsData))
+          showNotification(
+            'Novo Pet na Área!',
+            `O pet ${newPet.name} foi cadastrado perto de você.`
+          )
+
+          // --- 6. LÓGICA DE CHAT E NOTIFICAÇÃO SIMULADO ---
+
+          // Elementos da UI para o chat e notificações
+          const chatModal = document.getElementById('chat-modal')
+          const closeChatModal = document.getElementById('close-chat-modal')
+          const chatForm = document.getElementById('chat-form')
+          const chatInput = document.getElementById('chat-input')
+          const chatMessages = document.getElementById('chat-messages')
+          const chatPetName = document.getElementById('chat-pet-name')
+          const chatPetPhoto = document.getElementById('chat-pet-photo')
+
+          const notificationButton = document.getElementById(
+            'notification-button'
+          )
+          const notificationBadge =
+            document.getElementById('notification-badge')
+          const notificationToast =
+            document.getElementById('notification-toast')
+          const toastMessage = document.getElementById('toast-message')
+          const toastTitle = document.getElementById('toast-title')
+          const closeToast = document.getElementById('close-toast')
+
+          let notificationCount = 0
+
+          // Função para exibir uma notificação (toast)
+          const showNotification = (title, message) => {
+            toastTitle.textContent = title
+            toastMessage.textContent = message
+            notificationToast.classList.remove('hidden')
+            notificationToast.classList.add('show')
+
+            // Atualiza o contador no sino
+            notificationCount++
+            notificationBadge.textContent = notificationCount
+            notificationBadge.classList.remove('hidden')
+
+            setTimeout(() => {
+              notificationToast.classList.remove('show')
+              notificationToast.classList.add('hidden')
+            }, 5000) // Oculta após 5 segundos
+          }
+
+          closeToast.addEventListener('click', () => {
+            notificationToast.classList.remove('show')
+            notificationToast.classList.add('hidden')
+          })
+
+          notificationButton.addEventListener('click', () => {
+            // Ação ao clicar no sino (pode abrir um painel de notificações no futuro)
+            alert(`Você tem ${notificationCount} novas notificações.`)
+            notificationCount = 0
+            notificationBadge.classList.add('hidden')
+          })
+
+          // Abre o modal de chat
+          window.openChat = petId => {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'))
+            if (!currentUser) {
+              alert('Você precisa estar logado para iniciar uma conversa.')
+              document.getElementById('login-modal').classList.remove('hidden')
+              return
+            }
+
+            const pet = petsData.find(p => p.id === petId)
+            if (pet) {
+              chatPetName.textContent = `Conversa sobre ${pet.name}`
+              chatPetPhoto.src = pet.photo
+              chatModal.classList.remove('hidden')
+              chatMessages.innerHTML = `
+            <div class="text-center text-sm text-gray-500 my-2">Início da conversa sobre ${pet.name}</div>
+        `
+              // Simula uma mensagem de boas-vindas do tutor
+              setTimeout(
+                () =>
+                  addMessageToChat(
+                    'Olá! Obrigado por entrar em contato sobre o meu pet. Você tem alguma informação?',
+                    'other'
+                  ),
+                1000
+              )
+            }
+          }
+
+          // Fecha o modal de chat
+          closeChatModal.addEventListener('click', () =>
+            chatModal.classList.add('hidden')
+          )
+
+          // Adiciona uma mensagem à janela de chat
+          const addMessageToChat = (text, sender) => {
+            const messageDiv = document.createElement('div')
+            messageDiv.className = `chat-bubble ${
+              sender === 'user' ? 'chat-bubble-user' : 'chat-bubble-other'
+            }`
+            messageDiv.textContent = text
+            chatMessages.appendChild(messageDiv)
+            chatMessages.scrollTop = chatMessages.scrollHeight // Rola para a última mensagem
+          }
+
+          // Evento de envio de mensagem
+          chatForm.addEventListener('submit', e => {
+            e.preventDefault()
+            const messageText = chatInput.value.trim()
+            if (messageText) {
+              addMessageToChat(messageText, 'user')
+              chatInput.value = ''
+
+              // Resposta simulada do bot/tutor
+              setTimeout(() => {
+                addMessageToChat(
+                  'Entendido. Vou verificar e retorno em breve. Onde você o viu?',
+                  'other'
+                )
+              }, 1500)
+            }
+          })
+
+          // --- FIM DA LÓGICA DE CHAT E NOTIFICAÇÃO ---
+
+          updateUI() // Atualiza mapa e lista
+
+          alert('Pet cadastrado com sucesso!')
+          closeModal()
+        })
+
+        // --- LÓGICA DE AUTENTICAÇÃO (código existente, apenas integrado) ---
+        // (O código de autenticação das subtarefas anteriores vai aqui, sem alterações)
+        // Para manter o foco, vou omitir a repetição, mas ele deve ser mantido.
+        // Cole aqui a seção "INÍCIO DA LÓGICA DE AUTENTICAÇÃO" do código original.
+
+        // --- 8. LÓGICA DAS SEÇÕES INFORMATIVAS ---
+
+        const statsSection = document.getElementById('stats')
+        const counters = document.querySelectorAll('#stats h3')
+        let animated = false
+
+        const animateCounters = () => {
+          counters.forEach(counter => {
+            const target = +counter.getAttribute('data-target')
+            const count = +counter.innerText
+
+            const increment = target / 200 // Velocidade da animação
+
+            if (count < target) {
+              counter.innerText = `${Math.ceil(count + increment)}`
+              setTimeout(animateCounters, 10)
+            } else {
+              counter.innerText = target
+            }
+          })
+        }
+
+        // Anima os contadores quando a seção se torna visível
+        const observer = new IntersectionObserver(
+          entries => {
+            if (entries[0].isIntersecting && !animated) {
+              animated = true
+              animateCounters()
+            }
+          },
+          {
+            threshold: 0.5 // Inicia quando 50% da seção estiver visível
+          }
+        )
+
+        if (statsSection) {
+          observer.observe(statsSection)
+        }
+
+        // --- FIM DA LÓGICA DAS SEÇÕES INFORMATIVAS ---
+
+        // --- CHAMADA INICIAL ---
+        updateUI()
+      })
+    </script>
+  </body>
+</html>

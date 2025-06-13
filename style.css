@@ -1,0 +1,110 @@
+/* Remove a altura fixa anterior */
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+/* Estilos para o painel lateral */
+#side-panel {
+  /* No mobile, se comportará como um "bottom sheet" ou ocupará a tela toda */
+  height: 40%; /* Altura inicial no mobile */
+  position: relative;
+  z-index: 40; /* Abaixo do header */
+}
+
+/* Em telas maiores (md), o painel fica fixo à esquerda */
+@media (min-width: 768px) {
+  #side-panel {
+    height: 100%; /* Ocupa a altura toda */
+  }
+}
+
+/* Estilos para o popup melhorado */
+.custom-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.custom-popup .leaflet-popup-content {
+  margin: 0;
+}
+
+.custom-popup .info-button {
+  background-color: #2382fe;
+  color: white;
+  border: none;
+  width: 100%;
+  padding: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.custom-popup .info-button:hover {
+  background-color: #1e6fe6;
+}
+
+/* Ícone de urgência */
+.urgent-icon {
+  font-size: 24px;
+  animation: pulse 1.5s infinite;
+  filter: drop-shadow(0 0 3px red);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Estilos para as bolhas de mensagem */
+.chat-bubble {
+  padding: 10px 15px;
+  border-radius: 20px;
+  max-width: 75%;
+  word-wrap: break-word;
+}
+
+.chat-bubble-user {
+  background-color: #2382fe; /* Cor primária */
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+}
+
+.chat-bubble-other {
+  background-color: #e5e7eb; /* Cinza claro */
+  color: #1f2937; /* Cinza escuro */
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+}
+
+/* Animação para o Toast */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+#notification-toast.show {
+  display: block;
+  animation: slideInUp 0.5s ease-out forwards;
+}
+
+/* Estilo para navegação suave */
+html {
+  scroll-behavior: smooth;
+}
